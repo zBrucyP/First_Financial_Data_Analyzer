@@ -12,10 +12,15 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 class Application():
 
     # CLASS VARIABLES
-    root = None
-    text_fileName = None
-    button_file_chooser = None
-    file = None
+    root = None # tkinter root
+    text_fileName = None # display file name after file chosen
+    button_file_chooser = None # button to initiate file dialog
+    file = None # file that user chooses
+    screen_width = None # width of user's screen
+    screen_height = None # height of user's screen
+    frame_charts = None # holds charts that visualize data from file
+    date_start = None
+    date_end = None
 
     # CLASS CONSTANTS
 
@@ -25,25 +30,32 @@ class Application():
         starting point of app
         :return: N/A
         '''
+
         # create GUI root
         self.root = tk.Tk()
         self.root.title(string="First Financial Checking Account Data Analyzer")
+        self.screen_height, self.screen_width = self.root.winfo_screenheight(), self.root.winfo_screenwidth() # grab screen dimensions
+        self.root.state('zoomed') # set full screen, with title bar.
 
         # attach button for file dialog
         self.button_file_chooser = tk.Button(self.root, text='Choose file', command=self.get_file_path)
         self.button_file_chooser.pack()
 
         # attach Text field for initial date range
-        #self.text_initial_date = tk.Text(self.root, )
-        #self.text_initial_date.pack()
+        self.text_initial_date = tk.Text(self.root, '01/01/2020')
+        self.text_initial_date.pack()
 
         # attach text to display file path
         self.text_fileName = tk.Label(self.root, text='')
         self.text_fileName.pack()
 
+        # Frame for charting area
+        self.frame_charts = tk.Frame(self.root)
+        self.frame_charts.pack()
+
         # attach button to do analysis
-        self.button_analyze = tk.Button(self.root, text='Analyze Data', command=self.analyze)
-        self.button_analyze.pack()
+        #self.button_analyze = tk.Button(self.root, text='Analyze Data', command=self.analyze)
+        #self.button_analyze.pack()
 
         # start GUI loop
         self.root.mainloop()
@@ -56,6 +68,7 @@ class Application():
         if self.file is not None:
             # update display text to show file name
             self.text_fileName.config(text=self.file.get_file_name())
+            self.render_charts()
         else:
             print('file was none')
 
@@ -70,31 +83,42 @@ class Application():
         self.file = File(analysis_file_path)
         self.update_GUI()
 
-    def analyze(self):
-        chart = Chart(self.root, 'Balance Over Time', self.file.get_file_contents(), 'Post Date', 'Balance')
-        chart.pack()
+    def render_charts(self):
+        df_file_contents = self.file.get_file_contents()
+
+        # chart 1
+        x_axis_data = df_file_contents['Post Date'].tolist()[::-1]
+        y_axis_data = df_file_contents['Balance'].tolist()[::-1]
+        chart1 = Chart(self.root, 'Balance Over Time', x_axis_data, y_axis_data)
+
+        # chart 2
+        x_axis_data2 = df_file_contents['Post Date'].tolist()[::-1]
+        y_axis_data2 = df_file_contents['Credit'].tolist()[::-1]
+        chart2 = Chart(self.root, 'Inflow', x_axis_data2, y_axis_data2)
+
+        chart1.pack()
+        chart2.pack()
 
 
 class Chart(tk.Frame):
 
-    df_data = None
     chart_title = ''
 
-    def __init__(self, tk_parent, chart_title, df, x_axis_ind, y_axis_ind):
-        tk.Frame.__init__(self, tk_parent)
-        self.df_data = df
+    def __init__(self, parent, chart_title, lis_x_axis_data, lis_y_axis_data):
+        tk.Frame.__init__(self, parent)
+
         self.chart_title = chart_title
 
         # init figure w/ data on backend
-        f = Figure(figsize=(5,5), dpi=100) # init figure
-        subp = f.add_subplot(111) # add a plot to the figure. 1x1, 1st chart spot
+        figure = Figure(figsize=(5,5), dpi=100) # init figure
+        subp = figure.add_subplot(111) # add a plot to the figure. abc -> a x b grid, cth spot
         subp.plot(
-            df[x_axis_ind].tolist()[::-1], # [::-1] reverses the list -> most recent data is at top of file by default
-            df[y_axis_ind].tolist()[::-1]
+            lis_x_axis_data,
+            lis_y_axis_data
         )
 
         # prepare canvas w/ connection to tk to display
-        canvas = FigureCanvasTkAgg(f, self)
+        canvas = FigureCanvasTkAgg(figure, self)
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
