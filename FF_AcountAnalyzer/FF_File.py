@@ -43,6 +43,9 @@ class FF_File:
         # extract data
         self.extract_data()
 
+        # clean / correct data
+        self.clean_correct_data()
+
         print(self.df_file_data)
 
 
@@ -69,4 +72,11 @@ class FF_File:
         :return: DataFrame
         '''
         return self.df_file_data
+
+    def clean_correct_data(self):
+        '''
+        actions to make data more usable
+        :return: N/A
+        '''
+        self.df_file_data['Post Date'] = pd.to_datetime(self.df_file_data['Post Date'])
 
