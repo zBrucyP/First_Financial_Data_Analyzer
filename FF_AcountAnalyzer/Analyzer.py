@@ -12,7 +12,7 @@ from tkcalendar import Calendar
 from tkinter import *
 
 
-class Application():
+class Application:
 
     # CLASS VARIABLES
     root = None # tkinter root
@@ -22,8 +22,8 @@ class Application():
     screen_width = None # width of user's screen
     screen_height = None # height of user's screen
     active_charts = [] # holds charts that visualize data from file
-    date_start = None
-    date_end = None
+    date_start = None # date filter for data
+    date_end = None # date filter for data
 
     # CLASS CONSTANTS
 
@@ -42,28 +42,27 @@ class Application():
 
         # attach button for file dialog
         self.button_file_chooser = tk.Button(self.root, text='Choose File', command=self.get_file_path)
-        self.button_file_chooser.pack()
+        self.button_file_chooser.grid(row=0, column=0, pady=2, padx=8, sticky=W)
 
         # attach button to select beginning of date range
         self.button_start_date = tk.Button(self.root, text='Choose Start Date', command=self.get_start_date)
-        self.button_start_date.pack()
+        self.button_start_date.grid(row=1, column=0, pady=2, padx=5, sticky=W)
 
         # attach button to select end of date range
         self.button_end_date = tk.Button(self.root, text='Choose End Date', command=self.get_end_date)
-        self.button_end_date.pack()
+        self.button_end_date.grid(row=2, column=0, pady=2, padx=5, sticky=W)
 
         # text to show start and end dates
         self.date_start = datetime.date(2018, 1, 1)
         self.date_end = datetime.date.today()
         self.text_start_date = tk.Label(self.root, text='Start: ' + str(self.date_start))
         self.text_end_date = tk.Label(self.root, text='End: ' + str(self.date_end))
-        self.text_start_date.pack()
-        self.text_end_date.pack()
-        self.text_end_date.pack()
+        self.text_start_date.grid(row=1, column=1, pady=2, padx=5)
+        self.text_end_date.grid(row=2, column=1, pady=2, padx=5)
 
         # attach text to display file path
         self.text_fileName = tk.Label(self.root, text='')
-        self.text_fileName.pack()
+        self.text_fileName.grid(row=0, column=1, pady=2, padx=5)
 
         # attach button to do analysis
         #self.button_analyze = tk.Button(self.root, text='Analyze Data', command=self.analyze)
@@ -73,6 +72,11 @@ class Application():
         self.root.mainloop()
 
     def get_start_date(self):
+        '''
+        Event handler for start date button
+        opens calendar UI object and waits for a date to be ok'd. Sets start date filter
+        :return: N/A
+        '''
         cal = Cal(self.root)
         self.root.wait_window(cal.top)
         if cal.get_date() != '' and not None:
@@ -80,6 +84,11 @@ class Application():
             self.update_GUI()
 
     def get_end_date(self):
+        '''
+        Event handler for end date button
+        opens calendar UI object and waits for a date to be ok'd. Sets end date filter
+        :return:
+        '''
         cal = Cal(self.root)
         self.root.wait_window(cal.top)
         if cal.get_date() != '' and not None:
@@ -118,10 +127,14 @@ class Application():
             self.update_GUI()
 
     def render_charts(self):
+        '''
+        creates charts from data + filters, places them on UI
+        :return: N/A
+        '''
 
         # destroy old charts
         for frm in self.active_charts:
-            frm.pack_forget()
+            frm.grid_forget()
             frm.destroy()
         self.active_charts = []
 
@@ -129,12 +142,12 @@ class Application():
         df_file_contents = df_file_contents[(df_file_contents['Post Date'] > datetime.datetime(self.date_start.year, self.date_start.month, self.date_start.day))
                                             & (df_file_contents['Post Date'] < datetime.datetime(self.date_end.year, self.date_end.month, self.date_end.day))]
 
-        # chart 1
+        # chart 1 - account balance over time
         x_axis_data = df_file_contents['Post Date'].tolist()[::-1]
         y_axis_data = df_file_contents['Balance'].tolist()[::-1]
         chart1 = Chart(self.root, 'Balance Over Time', x_axis_data, y_axis_data)
 
-        # chart 2
+        # chart 2 - credits to account over time
         x_axis_data2 = df_file_contents['Post Date'].tolist()[::-1]
         y_axis_data2 = df_file_contents['Credit'].tolist()[::-1]
         chart2 = Chart(self.root, 'Inflow', x_axis_data2, y_axis_data2)
@@ -143,8 +156,8 @@ class Application():
         self.active_charts.append(chart1)
         self.active_charts.append(chart2)
 
-        chart1.pack()
-        chart2.pack()
+        chart1.grid(row=3, column=4, padx=5)
+        chart2.grid(row=3, column=5, padx=5)
 
 
 class Chart(tk.Frame):
@@ -158,10 +171,15 @@ class Chart(tk.Frame):
 
         # init figure w/ data on backend
         figure = Figure(figsize=(5,5), dpi=100) # init figure
-        subp = figure.add_subplot(111) # add a plot to the figure. abc -> a x b grid, cth spot
+
+        # attach chart title
+        figure.suptitle(chart_title)
+
+        # add a plot to the figure. abc -> a x b grid, cth spot. One subplot per frame
+        subp = figure.add_subplot(111)
         subp.plot(
             lis_x_axis_data,
-            lis_y_axis_data
+            lis_y_axis_data,
         )
 
         # prepare canvas w/ connection to tk to display
@@ -175,7 +193,7 @@ class Chart(tk.Frame):
         canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
 
-class Cal():
+class Cal:
     def __init__(self, root):
 
         self.date = ''
